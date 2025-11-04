@@ -9,20 +9,91 @@
 #include "common.h"
 #include "parse.h"
 
+int add_employee(struct dbheader_t *dbhdr, struct employee_t **employees, char *addstring) {
+    // defensive coding
+    if (NULL == dbhdr) return STATUS_ERROR;
+    if (NULL == employees) return STATUS_ERROR;
+    if (NULL == *employees) return STATUS_ERROR;
+    if (NULL == addstring) return STATUS_ERROR;
+
+    char *name = strtok(addstring, ",");
+    if (NULL == name) return STATUS_ERROR;
+
+    char *address = strtok(NULL, ",");
+    if (NULL == address) return STATUS_ERROR;
+
+    char *hours = strtok(NULL, ",");
+    if (NULL == hours) return STATUS_ERROR;
+
+
+    // printf("%s %s %s\n", name, address, hours);
+
+    struct employee_t *e = *employees;
+    e = realloc(e, sizeof(struct employee_t)*dbhdr->count+1);
+    if (e == NULL) {
+        printf("realloc failed\n");
+        return STATUS_ERROR;
+    }
+
+    dbhdr->count++;
+
+    strncpy(e[dbhdr->count-1].name, name, sizeof(e[dbhdr->count-1].name)-1);
+    strncpy(e[dbhdr->count-1].address, address, sizeof(e[dbhdr->count-1].address)-1);
+    e[dbhdr->count-1].hours = atoi(hours);
+
+    // this part is important, but I don't understand it. Understand it!
+    *employees = e;
+
+    return STATUS_SUCCESS;
+}
+
+int read_employees(int fd, struct dbheader_t *dbhdr, struct employee_t **employeesOut) {
+    if (fd < 0) {
+        printf("Got a bad FD from the user\n");
+        return STATUS_ERROR;
+    }
+
+    int count = dbhdr->count;
+
+    struct employee_t *employees = calloc(count, sizeof(struct employee_t));
+    if (employees == -1) {
+        printf("Malloc failed\n");
+        return STATUS_ERROR;
+    }
+
+    read(fd, employees, count*sizeof(struct employee_t));
+
+    int i = 0;
+    for (; i < count; i++) {
+        employees[i].hours = ntohl(employees[i].hours);
+    }
+
+    *employeesOut = employees;
+
+    return STATUS_SUCCESS;
+}
+
 int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees) {
     if (fd < 0) {
         printf("Got a bad FD from the user\n");
         return -1;
     }
 
+    int realcount = dbhdr->count;
+
     dbhdr->magic = htonl(dbhdr->magic);
-    dbhdr->filesize = htonl(dbhdr->filesize);
+    dbhdr->filesize = htonl(sizeof(struct dbheader_t) + sizeof(struct employee_t) * realcount);
     dbhdr->count = htons(dbhdr->count);
     dbhdr->version =htons(dbhdr->version);
 
     lseek(fd, 0, SEEK_SET);
 
     write(fd, dbhdr, sizeof(struct dbheader_t));
+
+    for (int i = 0; i < realcount; i++) {
+        employees[i].hours = htonl(employees[i].hours);
+        write(fd, &employees[i], sizeof(struct employee_t));
+    }
 
     return 0;
 }
