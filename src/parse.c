@@ -89,14 +89,24 @@ int remove_employee(struct dbheader_t *dbhdr, struct employee_t **employees, cha
 
     printf("%s\n",removestring);
 
+    struct employee_t *e = *employees;
+    e = realloc(e, sizeof(struct employee_t)*dbhdr->count-1);
+    if (e == NULL) {
+        printf("realloc failed\n");
+        return STATUS_ERROR;
+    }
+
     for (int i = 0; i < dbhdr->count; i++) {
-        printf("employee name: %s\n", employees[i]->name);
+        printf("employee name: %s\n", e[i].name);
         printf("string to match: %s\n", removestring);
-        if (strcmp(employees[i]->name, removestring) == 0) {
-            employees[i] = NULL;
+        if (strcmp(e[i].name, removestring) == 0) {
+            e[i] = e[i+1];
             printf("we did match the string\n");
         }
     }
+
+
+    *employees = e;
 
     return STATUS_SUCCESS;
 }
