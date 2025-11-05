@@ -9,6 +9,15 @@
 #include "common.h"
 #include "parse.h"
 
+void list_employees(struct dbheader_t *dbhdr, struct employee_t *employees) {
+    for (int i = 0; i < dbhdr->count; i++) {
+        printf("Employee %d\n", i);
+        printf("\tName: %s\n", employees[i].name);
+        printf("\tAddress: %s\n", employees[i].address);
+        printf("\tHours: %d\n", employees[i].hours);
+    }
+}
+
 int add_employee(struct dbheader_t *dbhdr, struct employee_t **employees, char *addstring) {
     // defensive coding
     if (NULL == dbhdr) return STATUS_ERROR;
@@ -43,6 +52,51 @@ int add_employee(struct dbheader_t *dbhdr, struct employee_t **employees, char *
 
     // this part is important, but I don't understand it. Understand it!
     *employees = e;
+
+    return STATUS_SUCCESS;
+}
+
+int update_hours(struct dbheader_t *dbhdr, struct employee_t **employees, char *updatestring) {
+    int ident;
+
+    // defensive coding
+    if (NULL == dbhdr) return STATUS_ERROR;
+    if (NULL == employees) return STATUS_ERROR;
+    if (NULL == updatestring) return STATUS_ERROR;
+
+    char *id = strtok(updatestring, ",");
+    if (NULL == id) return STATUS_ERROR;
+
+    char *hours = strtok(NULL, ",");
+    if (NULL == hours) return STATUS_ERROR;
+
+    struct employee_t *e = *employees;
+
+    ident = atoi(id);
+
+    e[ident].hours = atoi(hours);
+
+    *employees = e;
+
+    return STATUS_SUCCESS;
+}
+
+int remove_employee(struct dbheader_t *dbhdr, struct employee_t **employees, char *removestring) {
+    // defensive coding
+    if (NULL == dbhdr) return STATUS_ERROR;
+    if (NULL == employees) return STATUS_ERROR;
+    if (NULL == removestring) return STATUS_ERROR;
+
+    printf("%s\n",removestring);
+
+    for (int i = 0; i < dbhdr->count; i++) {
+        printf("employee name: %s\n", employees[i]->name);
+        printf("string to match: %s\n", removestring);
+        if (strcmp(employees[i]->name, removestring) == 0) {
+            employees[i] = NULL;
+            printf("we did match the string\n");
+        }
+    }
 
     return STATUS_SUCCESS;
 }

@@ -23,14 +23,17 @@ int main(int argc, char *argv[])
 {
     char *filepath = NULL;
     char *addstring = NULL;
+    char *updatestring = NULL;
+    char *removestring = NULL;
     bool newfile = false;
+    bool list = false;
     int c;
 
     int dbfd = -1;
     struct dbheader_t *dbhdr = NULL;
     struct employee_t *employees = NULL;
     
-    while ((c = getopt(argc, argv, "nf:a:l")) != -1) {
+    while ((c = getopt(argc, argv, "nf:a:r:u:l")) != -1) {
         switch (c) {
         case 'n':
             newfile = true;
@@ -41,7 +44,14 @@ int main(int argc, char *argv[])
         case 'a':
             addstring = optarg;
             break;
+        case 'u':
+            updatestring = optarg;
+            break;
+        case 'r':
+            removestring = optarg;
+            break;
         case 'l':
+            list = true;
             break;
         case '?':
             printf("Unkown option -%c\n", c);
@@ -98,6 +108,18 @@ int main(int argc, char *argv[])
         // employees = realloc(employees, dbhdr->count*sizeof(struct employee_t));
 
         add_employee(dbhdr, &employees, addstring);
+    }
+
+    if (updatestring) {
+        update_hours(dbhdr, &employees, updatestring);
+    }
+
+    if (removestring) {
+        remove_employee(dbhdr, &employees, removestring);
+    }
+
+    if (list) {
+        list_employees(dbhdr, employees);
     }
 
     output_file(dbfd, dbhdr, employees);
